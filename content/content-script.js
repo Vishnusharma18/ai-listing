@@ -1,14 +1,14 @@
-// ListingBoom AI Content Script & Sidebar Overlay Injector
+// ListingBoom AI Content Script & Sidebar Overlay Injector Pro
 
 (function () {
   if (window.__listingboom_injected) return;
   window.__listingboom_injected = true;
 
-  console.log("ListingBoom AI Content Script Initialized.");
+  console.log("ListingBoom AI Pro Content Script Loaded.");
 
   let currentLanguage = "en"; // 'en' or 'hi'
 
-  // Helper to scrape product listing form fields on Amazon, Flipkart, Meesho, or Generic
+  // Helper to scrape inputs, textareas, or contenteditable divs on Amazon, Flipkart, Meesho, or Generic
   function scrapeListingData() {
     const hostname = window.location.hostname;
     let platform = "Generic";
@@ -22,7 +22,7 @@
     let bullets = [];
     let imageUrls = [];
 
-    // Title Scraper
+    // 1. Scrape Title
     const titleSelectors = [
       'input[name*="title" i]',
       'input[id*="title" i]',
@@ -33,8 +33,8 @@
     ];
     for (const sel of titleSelectors) {
       const el = document.querySelector(sel);
-      if (el && el.value) {
-        title = el.value.trim();
+      if (el && (el.value || el.innerText)) {
+        title = (el.value || el.innerText).trim();
         break;
       }
     }
@@ -47,22 +47,23 @@
       }
     }
 
-    // Description & Bullet points Scraper
-    const textareas = Array.from(document.querySelectorAll("textarea"));
-    textareas.forEach((ta) => {
-      const nameOrId = (ta.name + " " + ta.id + " " + ta.placeholder).toLowerCase();
-      if (nameOrId.includes("desc")) {
-        description = ta.value.trim();
-      } else if (nameOrId.includes("bullet") || nameOrId.includes("feature") || nameOrId.includes("key")) {
-        if (ta.value.trim()) bullets.push(ta.value.trim());
+    // 2. Scrape Description & Bullet points
+    const textareasAndEditors = Array.from(document.querySelectorAll('textarea, [contenteditable="true"]'));
+    textareasAndEditors.forEach((ta) => {
+      const textVal = ta.value || ta.innerText || '';
+      const identifier = (ta.name + " " + ta.id + " " + ta.getAttribute('placeholder')).toLowerCase();
+      if (identifier.includes("desc")) {
+        description = textVal.trim();
+      } else if (identifier.includes("bullet") || identifier.includes("feature") || identifier.includes("key")) {
+        if (textVal.trim()) bullets.push(textVal.trim());
       }
     });
 
-    if (!description && textareas.length > 0) {
-      description = textareas.map((t) => t.value.trim()).filter(Boolean).join("\n");
+    if (!description && textareasAndEditors.length > 0) {
+      description = textareasAndEditors.map((t) => (t.value || t.innerText || '').trim()).filter(Boolean).join("\n");
     }
 
-    // Price Scraper
+    // 3. Scrape Price
     const priceSelectors = [
       'input[name*="price" i]',
       'input[id*="price" i]',
@@ -77,7 +78,7 @@
       }
     }
 
-    // Image Scraper
+    // 4. Scrape Images
     const imgElements = Array.from(document.querySelectorAll("img"));
     imageUrls = imgElements
       .map((img) => img.src)
@@ -96,6 +97,43 @@
     };
   }
 
+  function applyTitleToForm(newTitle) {
+    const titleSelectors = [
+      'input[name*="title" i]',
+      'input[id*="title" i]',
+      'input[name*="productName" i]',
+      'input[id*="productName" i]',
+      'input[placeholder*="title" i]',
+      'input[placeholder*="product name" i]',
+      'input[type="text"]:not([type="hidden"])'
+    ];
+    for (const sel of titleSelectors) {
+      const el = document.querySelector(sel);
+      if (el) {
+        if ('value' in el) el.value = newTitle;
+        else el.innerText = newTitle;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+      }
+    }
+    navigator.clipboard.writeText(newTitle);
+    return false;
+  }
+
+  function applyAllToForm(newTitle, newDesc) {
+    let titleApplied = applyTitleToForm(newTitle);
+
+    const descEl = document.querySelector('textarea[name*="desc" i], textarea[id*="desc" i], textarea, [contenteditable="true"]');
+    if (descEl && newDesc) {
+      if ('value' in descEl) descEl.value = newDesc;
+      else descEl.innerText = newDesc;
+      descEl.dispatchEvent(new Event('input', { bubbles: true }));
+      descEl.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    return titleApplied;
+  }
+
   // Inject Floating Sidebar Overlay UI
   function createSidebarOverlay() {
     if (document.getElementById("listingboom-overlay")) return;
@@ -108,12 +146,13 @@
       right: 20px;
       width: 350px;
       max-height: 85vh;
-      background: #ffffff;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      background: #0f172a;
+      color: #f8fafc;
+      box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.5);
       border-radius: 12px;
       z-index: 999999;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #334155;
       overflow-y: auto;
       transition: all 0.3s ease;
       display: flex;
@@ -121,16 +160,16 @@
     `;
 
     container.innerHTML = `
-      <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 14px 16px; border-top-left-radius: 12px; border-top-right-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+      <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 12px 14px; border-top-left-radius: 12px; border-top-right-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 18px;">⚡</span>
           <div>
-            <div style="font-weight: 700; font-size: 14px;">ListingBoom AI Pro</div>
-            <div style="font-size: 11px; opacity: 0.8;" id="lb-platform-badge">Platform: Detecting...</div>
+            <div style="font-weight: 800; font-size: 13px; color: #38bdf8;">ListingBoom AI Pro</div>
+            <div style="font-size: 10px; opacity: 0.8; color: #94a3b8;" id="lb-platform-badge">Platform: Detecting...</div>
           </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <select id="lb-lang-select" style="background: #334155; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 11px; cursor: pointer;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <select id="lb-lang-select" style="background: #1e293b; color: #38bdf8; border: 1px solid #334155; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer;">
             <option value="en">English</option>
             <option value="hi">Hinglish</option>
           </select>
@@ -138,54 +177,54 @@
         </div>
       </div>
 
-      <div style="padding: 14px; font-size: 13px; color: #334155;">
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center; margin-bottom: 10px;">
-          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600;">Listing Quality Score</div>
-          <div id="lb-score-display" style="font-size: 30px; font-weight: 800; color: #2563eb; margin: 2px 0;">-- / 100</div>
-          <div id="lb-score-status" style="font-size: 11px; color: #64748b;">Click Audit to evaluate listing</div>
+      <div style="padding: 12px; font-size: 12px;">
+        <div style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; text-align: center; margin-bottom: 10px;">
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: 700;">Listing Quality Score</div>
+          <div id="lb-score-display" style="font-size: 32px; font-weight: 900; color: #38bdf8; margin: 2px 0;">-- / 100</div>
+          <div id="lb-score-status" style="font-size: 10px; color: #94a3b8;">Click Audit to evaluate listing</div>
         </div>
 
-        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-          <button id="lb-audit-btn" style="flex: 1; background: #2563eb; color: white; border: none; padding: 8px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px;">
+        <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+          <button id="lb-audit-btn" style="flex: 1; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; padding: 8px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 11px;">
             🔍 Quick Audit
           </button>
-          <button id="lb-generate-all-btn" style="flex: 1; background: #8b5cf6; color: white; border: none; padding: 8px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px;">
+          <button id="lb-generate-all-btn" style="flex: 1; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border: none; padding: 8px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 11px;">
             ✨ Generate AI All
           </button>
         </div>
 
-        <div id="lb-results-section" style="display: none; flex-direction: column; gap: 10px;">
-          <div style="border-top: 1px solid #f1f5f9; padding-top: 8px;">
-            <div style="font-weight: 600; font-size: 11px; color: #475569; margin-bottom: 4px;">TITLE OPTIMIZER</div>
-            <div id="lb-title-feedback" style="background: #f1f5f9; padding: 6px 8px; border-radius: 6px; font-size: 11px; color: #1e293b; margin-bottom: 6px;"></div>
-            <button id="lb-fix-title-btn" style="width: 100%; background: #10b981; color: white; border: none; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">
+        <div id="lb-results-section" style="display: none; flex-direction: column; gap: 8px;">
+          <div style="background: #1e293b; border: 1px solid #334155; padding: 8px; border-radius: 6px;">
+            <div style="font-weight: 700; font-size: 10px; color: #38bdf8; margin-bottom: 4px; text-transform: uppercase;">TITLE OPTIMIZER</div>
+            <div id="lb-title-feedback" style="color: #cbd5e1; font-size: 11px; margin-bottom: 6px;"></div>
+            <button id="lb-fix-title-btn" style="width: 100%; background: #10b981; color: white; border: none; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">
               ✨ Auto-Apply Best Title
             </button>
           </div>
 
-          <div style="border-top: 1px solid #f1f5f9; padding-top: 8px;">
-            <div style="font-weight: 600; font-size: 11px; color: #475569; margin-bottom: 4px;">COMPETITOR GAP ANALYSIS</div>
-            <div id="lb-gap-list" style="font-size: 11px; color: #dc2626; line-height: 1.4;"></div>
+          <div style="background: #1e293b; border: 1px solid #334155; padding: 8px; border-radius: 6px;">
+            <div style="font-weight: 700; font-size: 10px; color: #f87171; margin-bottom: 4px; text-transform: uppercase;">COMPETITOR GAP ANALYSIS</div>
+            <div id="lb-gap-list" style="font-size: 11px; color: #f87171; line-height: 1.4;"></div>
           </div>
 
-          <div style="border-top: 1px solid #f1f5f9; padding-top: 8px;">
-            <div style="font-weight: 600; font-size: 11px; color: #475569; margin-bottom: 4px;">TRENDING KEYWORDS TO ADD</div>
+          <div style="background: #1e293b; border: 1px solid #334155; padding: 8px; border-radius: 6px;">
+            <div style="font-weight: 700; font-size: 10px; color: #38bdf8; margin-bottom: 4px; text-transform: uppercase;">TRENDING KEYWORDS TO ADD</div>
             <div id="lb-keywords-list" style="display: flex; flex-wrap: wrap; gap: 4px;"></div>
           </div>
 
-          <div style="border-top: 1px solid #f1f5f9; padding-top: 8px;">
-            <div style="font-weight: 600; font-size: 11px; color: #475569; margin-bottom: 4px;">IMAGE CTR VISION AUDIT</div>
-            <div id="lb-image-ctr-info" style="font-size: 11px; color: #334155; line-height: 1.4;"></div>
+          <div style="background: #1e293b; border: 1px solid #334155; padding: 8px; border-radius: 6px;">
+            <div style="font-weight: 700; font-size: 10px; color: #38bdf8; margin-bottom: 4px; text-transform: uppercase;">IMAGE CTR VISION AUDIT</div>
+            <div id="lb-image-ctr-info" style="font-size: 11px; color: #cbd5e1; line-height: 1.4;"></div>
           </div>
         </div>
 
-        <div id="lb-generated-preview" style="display: none; border-top: 1px solid #e2e8f0; padding-top: 10px; margin-top: 10px;">
-          <div style="font-weight: 700; font-size: 12px; color: #0f172a; margin-bottom: 6px;">AI GENERATED LISTING CONTENT:</div>
-          <div style="font-weight: 600; font-size: 11px; color: #475569;">Generated Description:</div>
-          <div id="lb-gen-desc" style="background: #f8fafc; padding: 6px; border-radius: 4px; font-size: 11px; margin-bottom: 6px; border: 1px solid #e2e8f0;"></div>
-          <div style="font-weight: 600; font-size: 11px; color: #475569;">Generated Bullets (5 Items):</div>
-          <ul id="lb-gen-bullets" style="padding-left: 16px; margin: 4px 0 8px 0; font-size: 11px; color: #334155;"></ul>
-          <button id="lb-apply-all-generated-btn" style="width: 100%; background: #8b5cf6; color: white; border: none; padding: 8px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">
+        <div id="lb-generated-preview" style="display: none; background: #1e293b; border: 1px solid #334155; padding: 8px; border-radius: 6px; margin-top: 8px;">
+          <div style="font-weight: 700; font-size: 11px; color: #38bdf8; margin-bottom: 4px;">AI GENERATED LISTING CONTENT</div>
+          <div style="font-weight: 600; font-size: 10px; color: #94a3b8;">Description:</div>
+          <div id="lb-gen-desc" style="background: #090d16; padding: 6px; border-radius: 4px; font-size: 10px; color: #cbd5e1; margin-bottom: 6px; max-height: 80px; overflow-y: auto;"></div>
+          <div style="font-weight: 600; font-size: 10px; color: #94a3b8;">Bullet Points (5 Items):</div>
+          <ul id="lb-gen-bullets" style="padding-left: 14px; margin: 2px 0 8px 0; font-size: 10px; color: #cbd5e1;"></ul>
+          <button id="lb-apply-all-generated-btn" style="width: 100%; background: #8b5cf6; color: white; border: none; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">
             ⚡ Auto-Fill Generated Content To Form
           </button>
         </div>
@@ -209,53 +248,21 @@
 
     document.getElementById("lb-fix-title-btn").addEventListener("click", () => {
       const suggested = document.getElementById("lb-fix-title-btn").dataset.suggestedTitle;
-      if (suggested) applyTitleToForm(suggested);
+      if (suggested) {
+        const ok = applyTitleToForm(suggested);
+        alert(ok ? "✨ Title applied to form!" : "Title copied to clipboard!");
+      }
     });
 
     document.getElementById("lb-apply-all-generated-btn").addEventListener("click", () => {
       const title = document.getElementById("lb-apply-all-generated-btn").dataset.genTitle;
       const desc = document.getElementById("lb-apply-all-generated-btn").dataset.genDesc;
       applyAllToForm(title, desc);
+      alert("✨ AI Content auto-filled into listing form!");
     });
 
     const data = scrapeListingData();
     document.getElementById("lb-platform-badge").innerText = `Platform: ${data.platform}`;
-  }
-
-  function applyTitleToForm(newTitle) {
-    const titleSelectors = [
-      'input[name*="title" i]',
-      'input[id*="title" i]',
-      'input[name*="productName" i]',
-      'input[id*="productName" i]',
-      'input[placeholder*="title" i]',
-      'input[placeholder*="product name" i]',
-      'input[type="text"]:not([type="hidden"])'
-    ];
-    for (const sel of titleSelectors) {
-      const el = document.querySelector(sel);
-      if (el) {
-        el.value = newTitle;
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-        el.dispatchEvent(new Event('change', { bubbles: true }));
-        alert("✨ Optimized title successfully applied to product form!");
-        return;
-      }
-    }
-    navigator.clipboard.writeText(newTitle);
-    alert("Title copied to clipboard!");
-  }
-
-  function applyAllToForm(newTitle, newDesc) {
-    if (newTitle) applyTitleToForm(newTitle);
-
-    const descEl = document.querySelector('textarea[name*="desc" i], textarea[id*="desc" i], textarea');
-    if (descEl && newDesc) {
-      descEl.value = newDesc;
-      descEl.dispatchEvent(new Event('input', { bubbles: true }));
-      descEl.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    alert("✨ AI Content applied to listing form!");
   }
 
   async function runLiveAudit() {
@@ -376,7 +383,7 @@
 
     scoreDisplay.innerText = `${result.score} / 100`;
     scoreStatus.innerText = result.score >= 80 ? "🔥 Excellent Listing!" : "⚠️ Optimization Needed";
-    scoreStatus.style.color = result.score >= 80 ? "#16a34a" : "#d97706";
+    scoreStatus.style.color = result.score >= 80 ? "#10b981" : "#f59e0b";
 
     titleFeedback.innerText = result.titleAudit?.feedback || "Title checked.";
     if (result.titleAudit?.suggestedTitle) {
@@ -394,23 +401,23 @@
     keywordsList.innerHTML = "";
     (result.keywords || []).forEach((kw) => {
       const chip = document.createElement("span");
-      chip.style.cssText = "background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 500;";
+      chip.style.cssText = "background: #0284c7; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 600;";
       chip.innerText = kw;
       keywordsList.appendChild(chip);
     });
 
     if (result.imageCtr) {
       imageCtrInfo.innerHTML = `
-        <div><strong>Est. CTR:</strong> <span style="color:#2563eb; font-weight:bold;">${result.imageCtr.estimatedCtr || "N/A"}</span></div>
+        <div><strong>Est. CTR:</strong> <span style="color:#38bdf8; font-weight:bold;">${result.imageCtr.estimatedCtr || "N/A"}</span></div>
         <div><strong>Quality:</strong> ${result.imageCtr.qualityScore || "Good"}</div>
-        <div style="margin-top: 2px; font-size: 10px; color: #64748b;">• ${(result.imageCtr.tips || []).join("<br>• ")}</div>
+        <div style="margin-top: 2px; font-size: 10px; color: #94a3b8;">• ${(result.imageCtr.tips || []).join("<br>• ")}</div>
       `;
     }
 
     resultsSection.style.display = "flex";
   }
 
-  // Listen for Messages
+  // Listen for Extension Messages
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "SCRAPE_FORM_DATA") {
       const data = scrapeListingData();
@@ -422,6 +429,12 @@
         el.style.display = el.style.display === "none" ? "flex" : "none";
       }
       sendResponse({ status: "toggled" });
+    } else if (request.action === "APPLY_TITLE") {
+      const ok = applyTitleToForm(request.title);
+      sendResponse({ success: ok });
+    } else if (request.action === "APPLY_ALL") {
+      const ok = applyAllToForm(request.title, request.description);
+      sendResponse({ success: ok });
     }
     return true;
   });
