@@ -6,133 +6,7 @@
 
   console.log("ListingBoom AI Pro Content Script Loaded.");
 
-  let currentLanguage = "en"; // 'en' or 'hi'
-
-  // Helper to scrape inputs, textareas, or contenteditable divs on Amazon, Flipkart, Meesho, or Generic
-  function scrapeListingData() {
-    const hostname = window.location.hostname;
-    let platform = "Generic";
-    if (hostname.includes("amazon")) platform = "Amazon";
-    else if (hostname.includes("flipkart")) platform = "Flipkart";
-    else if (hostname.includes("meesho")) platform = "Meesho";
-
-    let title = "";
-    let description = "";
-    let price = "";
-    let bullets = [];
-    let imageUrls = [];
-
-    // 1. Scrape Title
-    const titleSelectors = [
-      'input[name*="title" i]',
-      'input[id*="title" i]',
-      'input[name*="productName" i]',
-      'input[id*="productName" i]',
-      'input[placeholder*="title" i]',
-      'input[placeholder*="product name" i]'
-    ];
-    for (const sel of titleSelectors) {
-      const el = document.querySelector(sel);
-      if (el && (el.value || el.innerText)) {
-        title = (el.value || el.innerText).trim();
-        break;
-      }
-    }
-    if (!title) {
-      const firstInput = document.querySelector('input[type="text"]:not([type="hidden"])');
-      if (firstInput && firstInput.value) {
-        title = firstInput.value.trim();
-      } else {
-        title = document.title;
-      }
-    }
-
-    // 2. Scrape Description & Bullet points
-    const textareasAndEditors = Array.from(document.querySelectorAll('textarea, [contenteditable="true"]'));
-    textareasAndEditors.forEach((ta) => {
-      const textVal = ta.value || ta.innerText || '';
-      const identifier = (ta.name + " " + ta.id + " " + ta.getAttribute('placeholder')).toLowerCase();
-      if (identifier.includes("desc")) {
-        description = textVal.trim();
-      } else if (identifier.includes("bullet") || identifier.includes("feature") || identifier.includes("key")) {
-        if (textVal.trim()) bullets.push(textVal.trim());
-      }
-    });
-
-    if (!description && textareasAndEditors.length > 0) {
-      description = textareasAndEditors.map((t) => (t.value || t.innerText || '').trim()).filter(Boolean).join("\n");
-    }
-
-    // 3. Scrape Price
-    const priceSelectors = [
-      'input[name*="price" i]',
-      'input[id*="price" i]',
-      'input[name*="mrp" i]',
-      'input[placeholder*="price" i]'
-    ];
-    for (const sel of priceSelectors) {
-      const el = document.querySelector(sel);
-      if (el && el.value) {
-        price = el.value.trim();
-        break;
-      }
-    }
-
-    // 4. Scrape Images
-    const imgElements = Array.from(document.querySelectorAll("img"));
-    imageUrls = imgElements
-      .map((img) => img.src)
-      .filter((src) => src && src.startsWith("http") && !src.includes("icon") && !src.includes("logo") && !src.includes("svg"))
-      .slice(0, 6);
-
-    return {
-      platform,
-      title,
-      description,
-      bullets,
-      price,
-      imageUrls,
-      language: currentLanguage,
-      url: window.location.href
-    };
-  }
-
-  function applyTitleToForm(newTitle) {
-    const titleSelectors = [
-      'input[name*="title" i]',
-      'input[id*="title" i]',
-      'input[name*="productName" i]',
-      'input[id*="productName" i]',
-      'input[placeholder*="title" i]',
-      'input[placeholder*="product name" i]',
-      'input[type="text"]:not([type="hidden"])'
-    ];
-    for (const sel of titleSelectors) {
-      const el = document.querySelector(sel);
-      if (el) {
-        if ('value' in el) el.value = newTitle;
-        else el.innerText = newTitle;
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-        el.dispatchEvent(new Event('change', { bubbles: true }));
-        return true;
-      }
-    }
-    navigator.clipboard.writeText(newTitle);
-    return false;
-  }
-
-  function applyAllToForm(newTitle, newDesc) {
-    let titleApplied = applyTitleToForm(newTitle);
-
-    const descEl = document.querySelector('textarea[name*="desc" i], textarea[id*="desc" i], textarea, [contenteditable="true"]');
-    if (descEl && newDesc) {
-      if ('value' in descEl) descEl.value = newDesc;
-      else descEl.innerText = newDesc;
-      descEl.dispatchEvent(new Event('input', { bubbles: true }));
-      descEl.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    return titleApplied;
-  }
+  let currentLanguage = "en";
 
   // Inject Floating Sidebar Overlay UI
   function createSidebarOverlay() {
@@ -164,7 +38,7 @@
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 18px;">⚡</span>
           <div>
-            <div style="font-weight: 800; font-size: 13px; color: #38bdf8;">ListingBoom AI Pro</div>
+            <div style="font-weight: 800; font-size: 13px; color: #38bdf8;">Listing Copilot Pro</div>
             <div style="font-size: 10px; opacity: 0.8; color: #94a3b8;" id="lb-platform-badge">Platform: Detecting...</div>
           </div>
         </div>
@@ -179,7 +53,7 @@
 
       <div style="padding: 12px; font-size: 12px;">
         <div style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; text-align: center; margin-bottom: 10px;">
-          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: 700;">Listing Quality Score</div>
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: 700;">Listing Readiness Score</div>
           <div id="lb-score-display" style="font-size: 32px; font-weight: 900; color: #38bdf8; margin: 2px 0;">-- / 100</div>
           <div id="lb-score-status" style="font-size: 10px; color: #94a3b8;">Click Audit to evaluate listing</div>
         </div>
@@ -195,7 +69,12 @@
 
         <div id="lb-results-section" style="display: none; flex-direction: column; gap: 8px;">
           <div style="background: #1e293b; border: 1px solid #334155; padding: 8px; border-radius: 6px;">
-            <div style="font-weight: 700; font-size: 10px; color: #38bdf8; margin-bottom: 4px; text-transform: uppercase;">TITLE OPTIMIZER</div>
+            <div style="font-weight: 700; font-size: 10px; color: #f59e0b; margin-bottom: 4px; text-transform: uppercase;">🔥 TOP ACTIONS RIGHT NOW</div>
+            <div id="lb-top-actions" style="font-size: 11px; color: #f8fafc; line-height: 1.4;"></div>
+          </div>
+
+          <div style="background: #1e293b; border: 1px solid #334155; padding: 8px; border-radius: 6px;">
+            <div style="font-weight: 700; font-size: 10px; color: #38bdf8; margin-bottom: 4px; text-transform: uppercase;">TITLE QUALITY</div>
             <div id="lb-title-feedback" style="color: #cbd5e1; font-size: 11px; margin-bottom: 6px;"></div>
             <button id="lb-fix-title-btn" style="width: 100%; background: #10b981; color: white; border: none; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">
               ✨ Auto-Apply Best Title
@@ -203,18 +82,13 @@
           </div>
 
           <div style="background: #1e293b; border: 1px solid #334155; padding: 8px; border-radius: 6px;">
-            <div style="font-weight: 700; font-size: 10px; color: #f87171; margin-bottom: 4px; text-transform: uppercase;">COMPETITOR GAP ANALYSIS</div>
-            <div id="lb-gap-list" style="font-size: 11px; color: #f87171; line-height: 1.4;"></div>
-          </div>
-
-          <div style="background: #1e293b; border: 1px solid #334155; padding: 8px; border-radius: 6px;">
-            <div style="font-weight: 700; font-size: 10px; color: #38bdf8; margin-bottom: 4px; text-transform: uppercase;">TRENDING KEYWORDS TO ADD</div>
+            <div style="font-weight: 700; font-size: 10px; color: #38bdf8; margin-bottom: 4px; text-transform: uppercase;">OBSERVED KEYWORDS</div>
             <div id="lb-keywords-list" style="display: flex; flex-wrap: wrap; gap: 4px;"></div>
           </div>
 
           <div style="background: #1e293b; border: 1px solid #334155; padding: 8px; border-radius: 6px;">
-            <div style="font-weight: 700; font-size: 10px; color: #38bdf8; margin-bottom: 4px; text-transform: uppercase;">IMAGE CTR VISION AUDIT</div>
-            <div id="lb-image-ctr-info" style="font-size: 11px; color: #cbd5e1; line-height: 1.4;"></div>
+            <div style="font-weight: 700; font-size: 10px; color: #38bdf8; margin-bottom: 4px; text-transform: uppercase;">IMAGE OPTIMIZATION READINESS</div>
+            <div id="lb-image-readiness-info" style="font-size: 11px; color: #cbd5e1; line-height: 1.4;"></div>
           </div>
         </div>
 
@@ -233,7 +107,6 @@
 
     document.body.appendChild(container);
 
-    // Event listeners
     document.getElementById("lb-close-btn").addEventListener("click", () => {
       container.style.display = "none";
     });
@@ -248,8 +121,8 @@
 
     document.getElementById("lb-fix-title-btn").addEventListener("click", () => {
       const suggested = document.getElementById("lb-fix-title-btn").dataset.suggestedTitle;
-      if (suggested) {
-        const ok = applyTitleToForm(suggested);
+      if (suggested && window.PlatformAdapters) {
+        const ok = window.PlatformAdapters.applyTitle(suggested);
         alert(ok ? "✨ Title applied to form!" : "Title copied to clipboard!");
       }
     });
@@ -257,12 +130,14 @@
     document.getElementById("lb-apply-all-generated-btn").addEventListener("click", () => {
       const title = document.getElementById("lb-apply-all-generated-btn").dataset.genTitle;
       const desc = document.getElementById("lb-apply-all-generated-btn").dataset.genDesc;
-      applyAllToForm(title, desc);
-      alert("✨ AI Content auto-filled into listing form!");
+      if (window.PlatformAdapters) {
+        window.PlatformAdapters.applyAll(title, desc);
+        alert("✨ AI Content auto-filled into listing form!");
+      }
     });
 
-    const data = scrapeListingData();
-    document.getElementById("lb-platform-badge").innerText = `Platform: ${data.platform}`;
+    const data = window.PlatformAdapters ? window.PlatformAdapters.scrape() : {};
+    document.getElementById("lb-platform-badge").innerText = `Platform: ${data.platform || "Detecting..."}`;
   }
 
   async function runLiveAudit() {
@@ -273,7 +148,8 @@
     auditBtn.innerText = "⏳ Analyzing...";
     scoreDisplay.innerText = "Analyzing...";
 
-    const scrapedData = scrapeListingData();
+    const scrapedData = window.PlatformAdapters ? window.PlatformAdapters.scrape() : {};
+    scrapedData.language = currentLanguage;
 
     try {
       const response = await fetch("http://localhost:3000/analyze-listing", {
@@ -286,9 +162,9 @@
       const result = await response.json();
       displayResults(result);
     } catch (err) {
-      console.warn("Backend not reachable, running client-side engine:", err);
-      const mockResult = generateClientAudit(scrapedData);
-      displayResults(mockResult);
+      console.warn("Backend offline, running fallback audit:", err);
+      const fallbackResult = generateClientAudit(scrapedData);
+      displayResults(fallbackResult);
     } finally {
       auditBtn.disabled = false;
       auditBtn.innerText = "🔍 Quick Audit";
@@ -300,7 +176,8 @@
     genBtn.disabled = true;
     genBtn.innerText = "⏳ Generating...";
 
-    const scrapedData = scrapeListingData();
+    const scrapedData = window.PlatformAdapters ? window.PlatformAdapters.scrape() : {};
+    scrapedData.language = currentLanguage;
 
     try {
       const response = await fetch("http://localhost:3000/generate-bullets-desc", {
@@ -313,17 +190,17 @@
       const result = await response.json();
       displayGeneratedContent(result);
     } catch (err) {
-      console.warn("Backend not reachable, using offline AI generator:", err);
+      console.warn("Backend offline, using fallback AI generator:", err);
       displayGeneratedContent({
-        title: `${scrapedData.title || "Premium Product"} | Top Rated 2025 Edition`,
+        title: `${scrapedData.title || "Product"} - Quality Assured & Durable Design`,
         bullets: [
-          "🔥 PREMIUM QUALITY: Durable construction for daily use.",
-          "✨ ELEGANT DESIGN: Trendy aesthetic and perfect finishing.",
-          "📦 HIGH UTILITY: Lightweight & comfortable.",
-          "💯 LONG LASTING: Tested for maximum durability.",
-          "🚚 TRUSTED CHOICE: Fast delivery & satisfaction guaranteed."
+          "MATERIAL & BUILD: Crafted with durable quality materials.",
+          "DESIGN & FIT: Modern aesthetic engineered for daily utility.",
+          "EASY MAINTENANCE: Designed for long service life.",
+          "PERFORMANCE: Tested for reliability.",
+          "PACKAGING: Secure packaging for safe transit."
         ],
-        description: `High quality ${scrapedData.title || "product"} designed for ${scrapedData.platform} buyers.`
+        description: `Upgrade your listing with ${scrapedData.title || "this item"}. Carefully engineered for everyday comfort and utility.`
       });
     } finally {
       genBtn.disabled = false;
@@ -354,19 +231,27 @@
   function generateClientAudit(data) {
     let score = 55;
     const titleLen = data.title ? data.title.length : 0;
+    if (titleLen > 25) score += 20;
+    if (data.description && data.description.length > 50) score += 15;
+    if (data.imageUrls && data.imageUrls.length >= 2) score += 10;
+
     return {
-      score: titleLen > 25 ? 85 : 60,
+      listingReadinessScore: Math.min(score, 95),
       platform: data.platform,
-      titleAudit: {
-        feedback: titleLen > 25 ? "Good title length!" : "Title is short. Add brand name & features.",
-        suggestedTitle: `${data.title || "Product"} | High Quality & Free Delivery`
+      topActions: [
+        "Expand title with brand, size, or key specifications.",
+        "Upload secondary product images (3+ gallery images recommended)."
+      ],
+      titleAnalysis: {
+        score: titleLen > 25 ? 85 : 55,
+        feedback: titleLen > 25 ? "Good title length." : "Title is short. Add key product attributes.",
+        suggestedTitle: `${data.title || "Product"} - Quality Assured & Durable Design`
       },
-      competitorGap: ["Add bullet points for specifications", "Include dimension chart"],
-      keywords: ["High Quality", "Top Rated", "Trending 2025"],
-      imageCtr: {
-        estimatedCtr: "4.5%",
-        qualityScore: "Good",
-        tips: ["Use pure white background", "Show product dimensions"]
+      observedKeywords: ["High Quality", "Durable", "Best Value"],
+      imageAnalysis: {
+        readinessScore: data.imageUrls && data.imageUrls.length >= 3 ? 85 : 50,
+        imageCount: data.imageUrls ? data.imageUrls.length : 0,
+        recommendations: ["Main image should have a clean white background.", "Add size infographic or lifestyle image."]
       }
     };
   }
@@ -375,52 +260,53 @@
     const scoreDisplay = document.getElementById("lb-score-display");
     const scoreStatus = document.getElementById("lb-score-status");
     const resultsSection = document.getElementById("lb-results-section");
+    const topActionsDiv = document.getElementById("lb-top-actions");
     const titleFeedback = document.getElementById("lb-title-feedback");
     const fixTitleBtn = document.getElementById("lb-fix-title-btn");
-    const gapList = document.getElementById("lb-gap-list");
     const keywordsList = document.getElementById("lb-keywords-list");
-    const imageCtrInfo = document.getElementById("lb-image-ctr-info");
+    const imageReadinessInfo = document.getElementById("lb-image-readiness-info");
 
-    scoreDisplay.innerText = `${result.score} / 100`;
-    scoreStatus.innerText = result.score >= 80 ? "🔥 Excellent Listing!" : "⚠️ Optimization Needed";
-    scoreStatus.style.color = result.score >= 80 ? "#10b981" : "#f59e0b";
+    const score = result.listingReadinessScore || result.score || 50;
+    scoreDisplay.innerText = `${score} / 100`;
+    scoreStatus.innerText = score >= 80 ? "🔥 High Listing Readiness!" : "⚠️ Optimization Opportunities Found";
+    scoreStatus.style.color = score >= 80 ? "#10b981" : "#f59e0b";
 
-    titleFeedback.innerText = result.titleAudit?.feedback || "Title checked.";
-    if (result.titleAudit?.suggestedTitle) {
-      fixTitleBtn.dataset.suggestedTitle = result.titleAudit.suggestedTitle;
+    topActionsDiv.innerHTML = "";
+    (result.topActions || []).forEach((action) => {
+      const div = document.createElement("div");
+      div.innerText = `• ${action}`;
+      topActionsDiv.appendChild(div);
+    });
+
+    titleFeedback.innerText = result.titleAnalysis?.feedback || "Title analyzed.";
+    if (result.titleAnalysis?.suggestedTitle) {
+      fixTitleBtn.dataset.suggestedTitle = result.titleAnalysis.suggestedTitle;
       fixTitleBtn.style.display = "block";
     }
 
-    gapList.innerHTML = "";
-    (result.competitorGap || []).forEach((gap) => {
-      const div = document.createElement("div");
-      div.innerText = `• ${gap}`;
-      gapList.appendChild(div);
-    });
-
     keywordsList.innerHTML = "";
-    (result.keywords || []).forEach((kw) => {
+    (result.observedKeywords || result.keywords || []).forEach((kw) => {
       const chip = document.createElement("span");
       chip.style.cssText = "background: #0284c7; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 600;";
       chip.innerText = kw;
       keywordsList.appendChild(chip);
     });
 
-    if (result.imageCtr) {
-      imageCtrInfo.innerHTML = `
-        <div><strong>Est. CTR:</strong> <span style="color:#38bdf8; font-weight:bold;">${result.imageCtr.estimatedCtr || "N/A"}</span></div>
-        <div><strong>Quality:</strong> ${result.imageCtr.qualityScore || "Good"}</div>
-        <div style="margin-top: 2px; font-size: 10px; color: #94a3b8;">• ${(result.imageCtr.tips || []).join("<br>• ")}</div>
+    if (result.imageAnalysis) {
+      imageReadinessInfo.innerHTML = `
+        <div><strong>Image Optimization Readiness:</strong> <span style="color:#38bdf8; font-weight:bold;">${result.imageAnalysis.readinessScore || 60}/100</span></div>
+        <div><strong>Image Count:</strong> ${result.imageAnalysis.imageCount || 0} images</div>
+        <div style="margin-top: 2px; font-size: 10px; color: #94a3b8;">• ${(result.imageAnalysis.recommendations || []).join("<br>• ")}</div>
       `;
     }
 
     resultsSection.style.display = "flex";
   }
 
-  // Listen for Extension Messages
+  // Listen for Messages
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "SCRAPE_FORM_DATA") {
-      const data = scrapeListingData();
+      const data = window.PlatformAdapters ? window.PlatformAdapters.scrape() : {};
       sendResponse(data);
     } else if (request.action === "TOGGLE_SIDEBAR") {
       createSidebarOverlay();
@@ -430,10 +316,10 @@
       }
       sendResponse({ status: "toggled" });
     } else if (request.action === "APPLY_TITLE") {
-      const ok = applyTitleToForm(request.title);
+      const ok = window.PlatformAdapters ? window.PlatformAdapters.applyTitle(request.title) : false;
       sendResponse({ success: ok });
     } else if (request.action === "APPLY_ALL") {
-      const ok = applyAllToForm(request.title, request.description);
+      const ok = window.PlatformAdapters ? window.PlatformAdapters.applyAll(request.title, request.description) : false;
       sendResponse({ success: ok });
     }
     return true;

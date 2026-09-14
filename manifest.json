@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "ListingBoom - AI Seller Assistant Pro",
-  "version": "2.0.0",
-  "description": "Instant AI Listing Optimizer, Vision CTR Checker & Keyword Generator for Amazon, Flipkart & Meesho.",
+  "name": "ListingBoom - AI Seller Copilot Pro",
+  "version": "3.0.0",
+  "description": "AI Listing Sales Copilot for Amazon India, Flipkart Seller Hub & Meesho Supplier Panel.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -21,14 +21,17 @@
   },
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "ListingBoom AI Assistant"
+    "default_title": "Listing Copilot"
   },
   "content_scripts": [
     {
       "matches": [
         "<all_urls>"
       ],
-      "js": ["content/content-script.js"],
+      "js": [
+        "content/adapters.js",
+        "content/content-script.js"
+      ],
       "run_at": "document_end"
     }
   ]

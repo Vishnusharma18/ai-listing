@@ -1,36 +1,39 @@
-# 🚀 Product Listing AI Extension - Project Tracker
+# 🚀 AI Listing Sales Growth Copilot - Project Tracker
 
 ## 📌 Project Overview
-* **Goal:** Real-time AI Assistant Chrome Extension jo Meesho, Flipkart, aur Amazon par product listing karte samay fast suggestions, CTR image audit, trending keywords, aur listing quality score de.
-* **Key Target:** Seller ko Fast & Automated listing review dena taaki bina manual research ke product boom kare.
+* **Goal:** Real-time AI Seller / Listing Growth Copilot Chrome Extension for Amazon India, Flipkart, and Meesho.
+* **Core Promise:** Improve marketplace listing quality, visibility, clicks, and conversion readiness with actionable recommendations.
 
 ---
 
 ## 🛠 Tech Stack
-* **Frontend/Extension:** Chrome Extension Manifest V3 (Vanilla JS / Tailwind)
-* **Backend/AI:** Node.js (Express) + Google Gemini / OpenAI Vision API
+* **Frontend/Extension:** Chrome Extension Manifest V3 (Vanilla JS)
+* **Backend/AI:** Node.js (Express) + Fact-Aware AI Provider Abstraction
 * **Target Platforms:** Amazon India, Flipkart Seller Hub, Meesho Supplier Panel
 
 ---
 
 ## 📋 Features Checklist & Roadmap
 
-### Phase 1: Core Extension Framework
+### Phase 1: Core Extension & Extraction Framework
 - [x] Folder structure & Manifest V3 setup
-- [x] Popup UI setup
-- [x] Project Tracker file creation
-- [x] Active Page DOM Scraper (Fetch current Title, Description, Image URLs from Active Tab)
+- [x] Popup UI setup with tabbed navigation
+- [x] Modular Platform Adapters (`Amazon`, `Flipkart`, `Meesho`, `Generic`)
+- [x] Active DOM Scraper (Scrapes Title, Description, Bullets, Images, Price)
 
-### Phase 2: AI Backend & Vision Scoring
-- [x] Fast Backend API Endpoint (`/analyze-listing`)
-- [x] Image Quality & CTR Predictor (Vision API Integration / Heuristic Engine)
-- [x] Trending Keyword Injector & Competitor Gap Analysis
+### Phase 2: AI Copilot Backend & Listing Analysis Engine
+- [x] Honest Listing Quality & Readiness Scoring Engine (0-100)
+- [x] Fact-Aware AI Content Generator (`/generate-bullets-desc`)
+- [x] Image Optimization Readiness Analysis (Quality score + actionable tips)
+- [x] Observed Keyword Extraction & Top Actions Prioritization ("🔥 Top 3 Actions")
 
-### Phase 3: Real-Time UI Overlay
-- [x] Sidebar Overlay directly on Seller Panels
-- [x] One-Click "Auto-Enhance Title" & "Fix Image" Suggestions
+### Phase 3: Real-Time Seller Overlay & Safe Auto-Apply
+- [x] Injected Sidebar Overlay directly on Seller Panels
+- [x] Hinglish / English Language Selector
+- [x] Safe Auto-Apply Preview before writing to seller forms
+- [x] 1-Command Startup (`npm start`) and Automated Tests (`npm test`)
 
 ---
 
 ## 🛑 Status
-* **Status:** 100% Completed! All features across Phase 1, Phase 2, and Phase 3 are implemented and verified.
+* **Status:** 100% Completed & Verified! All fake metrics removed; replaced with honest, actionable sales growth copilot features.

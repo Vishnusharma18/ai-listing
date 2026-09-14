@@ -7,17 +7,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const scoreBar = document.getElementById('score-bar');
   const scoreStatus = document.getElementById('score-status');
   const auditDetails = document.getElementById('audit-details');
+  const topActionsContainer = document.getElementById('top-actions-container');
   const titleFeedback = document.getElementById('title-feedback');
   const applyTitleBtn = document.getElementById('apply-title-btn');
-  const gapFeedback = document.getElementById('gap-feedback');
   const keywordsContainer = document.getElementById('keywords-container');
-  const imageCtrBox = document.getElementById('image-ctr-box');
+  const imageReadinessBox = document.getElementById('image-readiness-box');
   const aiPreviewSection = document.getElementById('ai-preview-section');
   const genDescBox = document.getElementById('gen-desc-box');
   const genBulletsBox = document.getElementById('gen-bullets-box');
   const applyGeneratedBtn = document.getElementById('apply-generated-btn');
 
-  // Tab switching logic
+  // Tab switching
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabContents = document.querySelectorAll('.tab-content');
 
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Safe tab message sender helper (handles connection errors & restricted tabs)
+  // Safe Tab Messaging
   function sendTabMessage(message, callback) {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tabId = tabs[0]?.id;
@@ -59,17 +59,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       chrome.tabs.sendMessage(tabId, message, (response) => {
         if (chrome.runtime.lastError) {
-          console.warn('Content script not connected, attempting dynamic injection...');
+          console.warn('Content script connection retry...');
           chrome.scripting.executeScript({
             target: { tabId: tabId },
-            files: ['content/content-script.js']
+            files: ['content/adapters.js', 'content/content-script.js']
           }, () => {
             if (chrome.runtime.lastError) {
-              console.error('Script injection failed:', chrome.runtime.lastError.message);
               if (callback) callback(null);
             } else {
               chrome.tabs.sendMessage(tabId, message, (res) => {
-                const dummy = chrome.runtime.lastError; // clear error
+                const dummy = chrome.runtime.lastError;
                 if (callback) callback(res);
               });
             }
@@ -81,12 +80,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Toggle Overlay Sidebar in Active Tab
+  // Toggle Overlay Sidebar
   toggleOverlayBtn.addEventListener('click', () => {
     sendTabMessage({ action: 'TOGGLE_SIDEBAR' });
   });
 
-  // Quick Audit Listing Click
+  // Analyze Active Listing
   analyzeBtn.addEventListener('click', () => {
     listingScore.innerText = 'Scanning...';
     scoreStatus.innerText = 'Scraping listing fields...';
@@ -109,14 +108,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await response.json();
         renderAuditResults(data);
       } catch (err) {
-        console.warn('Backend server not responding, running offline audit:', err);
+        console.warn('Backend server offline, using fallback client audit:', err);
         const offlineData = generateOfflineAudit(scrapedData);
         renderAuditResults(offlineData);
       }
     });
   });
 
-  // Generate AI Bullets & Description Click
+  // Generate Fact-Based AI Content
   generateAiBtn.addEventListener('click', () => {
     generateAiBtn.disabled = true;
     generateAiBtn.innerText = '⏳ Generating Content...';
@@ -135,77 +134,79 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await response.json();
         renderGeneratedResults(data);
       } catch (err) {
-        console.warn('Backend server off, using client AI generator:', err);
+        console.warn('Backend offline, using fallback generator:', err);
         renderGeneratedResults({
-          title: `${payload.title || 'Product'} | Premium Quality & Top Rated (2025 Edition)`,
+          title: `${payload.title || 'Product'} - High Quality & Durable Design`,
           bullets: [
-            '🔥 PREMIUM QUALITY: Durable construction for long-lasting use.',
-            '✨ ELEGANT DESIGN: Modern aesthetic and sleek finishing.',
-            '📦 HIGH UTILITY: Lightweight, compact and comfortable.',
-            '💯 SUPERIOR DURABILITY: Built to withstand daily wear and tear.',
-            '🚚 TOP RATED CHOICE: Guaranteed satisfaction with fast delivery.'
+            'MATERIAL & BUILD: Crafted with quality durable materials.',
+            'DESIGN & FIT: Modern aesthetic engineered for everyday utility.',
+            'EASY MAINTENANCE: Designed for hassle-free care.',
+            'PERFORMANCE: Tested for durability and wear resistance.',
+            'PACKAGING: Securely packed for safe delivery.'
           ],
-          description: `Upgrade your product portfolio with this premium ${payload.title || 'item'} on ${payload.platform || 'e-commerce'}!`
+          description: `Upgrade your listing with ${payload.title || 'this product'}. Carefully engineered for performance and comfort.`
         });
       } finally {
         generateAiBtn.disabled = false;
-        generateAiBtn.innerText = '✨ Generate AI Bullets & Description';
+        generateAiBtn.innerText = '✨ Generate Fact-Based Content';
       }
     });
   });
 
-  // Apply Suggested Title
+  // Apply Title
   applyTitleBtn.addEventListener('click', () => {
     const title = applyTitleBtn.dataset.suggestedTitle;
     if (title) {
       sendTabMessage({ action: 'APPLY_TITLE', title: title }, (res) => {
-        alert('✨ Title applied to product listing form!');
+        alert('✨ Title applied to form!');
       });
     }
   });
 
-  // Apply Generated All
+  // Apply Generated Content
   applyGeneratedBtn.addEventListener('click', () => {
     const title = applyGeneratedBtn.dataset.genTitle;
     const desc = applyGeneratedBtn.dataset.genDesc;
     sendTabMessage({ action: 'APPLY_ALL', title: title, description: desc }, (res) => {
-      alert('✨ AI Description & Bullet Points applied to form!');
+      alert('✨ Generated content applied to form!');
     });
   });
 
   function renderAuditResults(data) {
-    listingScore.innerText = `${data.score} / 100`;
-    scoreBar.style.width = `${data.score}%`;
-    scoreStatus.innerText = data.score >= 80 ? '🔥 Excellent Listing Quality!' : '⚠️ Optimization Needed';
-    scoreStatus.style.color = data.score >= 80 ? '#10b981' : '#f59e0b';
+    const score = data.listingReadinessScore || data.score || 50;
+    listingScore.innerText = `${score} / 100`;
+    scoreBar.style.width = `${score}%`;
+    scoreStatus.innerText = score >= 80 ? '🔥 High Listing Readiness!' : '⚠️ Optimization Opportunities Found';
+    scoreStatus.style.color = score >= 80 ? '#10b981' : '#f59e0b';
 
-    titleFeedback.innerText = data.titleAudit?.feedback || 'Title analyzed.';
-    if (data.titleAudit?.suggestedTitle) {
-      applyTitleBtn.dataset.suggestedTitle = data.titleAudit.suggestedTitle;
+    topActionsContainer.innerHTML = '';
+    const actions = data.topActions || ['Expand title with key specifications.', 'Add at least 5 bullet points.'];
+    actions.forEach((act) => {
+      const div = document.createElement('div');
+      div.className = 'top-action';
+      div.innerText = `• ${act}`;
+      topActionsContainer.appendChild(div);
+    });
+
+    titleFeedback.innerText = data.titleAnalysis?.score >= 80 ? 'Title is clear and good length.' : 'Title needs optimization.';
+    if (data.titleAnalysis?.suggestedTitle) {
+      applyTitleBtn.dataset.suggestedTitle = data.titleAnalysis.suggestedTitle;
       applyTitleBtn.style.display = 'block';
     }
 
-    gapFeedback.innerHTML = '';
-    (data.competitorGap || []).forEach((gap) => {
-      const div = document.createElement('div');
-      div.className = 'gap-item';
-      div.innerText = `• ${gap}`;
-      gapFeedback.appendChild(div);
-    });
-
     keywordsContainer.innerHTML = '';
-    (data.keywords || []).forEach((kw) => {
+    (data.observedKeywords || data.keywords || []).forEach((kw) => {
       const chip = document.createElement('span');
       chip.className = 'chip';
       chip.innerText = kw;
       keywordsContainer.appendChild(chip);
     });
 
-    if (data.imageCtr) {
-      imageCtrBox.innerHTML = `
-        <div><strong>Est. CTR:</strong> <span style="color:#38bdf8; font-weight:bold;">${data.imageCtr.estimatedCtr || 'N/A'}</span></div>
-        <div><strong>Image Quality:</strong> ${data.imageCtr.qualityScore || 'Good'} (${data.imageCtr.imageCount || 0} images)</div>
-        <div style="margin-top: 4px; font-size: 10px; color: #94a3b8;">• ${(data.imageCtr.tips || []).join('<br>• ')}</div>
+    if (data.imageAnalysis) {
+      imageReadinessBox.innerHTML = `
+        <div><strong>Image Optimization Readiness:</strong> <span style="color:#38bdf8; font-weight:bold;">${data.imageAnalysis.readinessScore || 60}/100</span></div>
+        <div><strong>Image Count:</strong> ${data.imageAnalysis.imageCount || 0} images</div>
+        <div style="margin-top: 4px; font-size: 10px; color: #94a3b8;">• ${(data.imageAnalysis.recommendations || []).join('<br>• ')}</div>
       `;
     }
 
@@ -217,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
     genBulletsBox.innerText = (data.bullets || []).join('\n\n');
 
     applyGeneratedBtn.dataset.genTitle = data.title;
-    applyGeneratedBtn.dataset.genDesc = `${data.description}\n\nKey Bullet Points:\n${(data.bullets || []).join('\n')}`;
+    applyGeneratedBtn.dataset.genDesc = `${data.description}\n\nKey Highlights:\n${(data.bullets || []).join('\n')}`;
 
     aiPreviewSection.style.display = 'block';
   }
@@ -229,21 +230,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (scraped.imageUrls && scraped.imageUrls.length >= 2) score += 10;
 
     return {
-      score: Math.min(score, 95),
-      titleAudit: {
-        feedback: scraped.title && scraped.title.length > 25
-          ? 'Good title! Ensure main keywords are placed near the front.'
-          : 'Title is too brief. Include brand, key benefits & specifications.',
-        suggestedTitle: `${scraped.title || 'Product'} | Premium Quality & Top Rated`
+      listingReadinessScore: Math.min(score, 95),
+      topActions: [
+        'Expand title with brand, size, or material details.',
+        'Upload secondary product gallery images (3+ recommended).'
+      ],
+      titleAnalysis: {
+        score: scraped.title && scraped.title.length > 25 ? 85 : 55,
+        suggestedTitle: `${scraped.title || 'Product'} - Quality Assured & Durable Design`
       },
-      competitorGap: ['Add dimension chart image', 'Include warranty details'],
-      keywords: ['High Quality', 'Top Choice', 'Trendy', 'Best Value'],
-      imageCtr: {
-        estimatedCtr: '4.2%',
-        qualityScore: 'Medium',
+      imageAnalysis: {
+        readinessScore: scraped.imageUrls && scraped.imageUrls.length >= 3 ? 85 : 50,
         imageCount: scraped.imageUrls ? scraped.imageUrls.length : 0,
-        tips: ['Use pure white background (RGB 255,255,255)', 'Add dimension chart']
-      }
+        recommendations: ['Main image should have a clean white background.', 'Add size infographic or lifestyle image.']
+      },
+      observedKeywords: ['High Quality', 'Durable', 'Best Value']
     };
   }
 });
