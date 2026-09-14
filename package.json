@@ -1,0 +1,9 @@
+{
+  "name": "listingboom-ai",
+  "version": "1.0.0",
+  "description": "Instant AI Listing Optimizer & Trend Checker Chrome Extension & Backend",
+  "scripts": {
+    "start": "cd backend && npm install && npm start",
+    "test": "cd backend && npm install && npm test"
+  }
+}

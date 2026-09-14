@@ -1,11 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
   const platformStatus = document.getElementById('platform-status');
   const analyzeBtn = document.getElementById('analyze-btn');
+  const genAiBtn = document.getElementById('gen-ai-btn');
   const toggleOverlayBtn = document.getElementById('toggle-overlay-btn');
   const listingScore = document.getElementById('listing-score');
   const scoreStatus = document.getElementById('score-status');
   const detailsSection = document.getElementById('details-section');
   const titleFeedback = document.getElementById('title-feedback');
+  const gapFeedback = document.getElementById('gap-feedback');
   const keywordsContainer = document.getElementById('keywords-container');
 
   // Detect active platform tab
@@ -48,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-          // Call backend server or fallback locally
           const response = await fetch('http://localhost:3000/analyze-listing', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -67,12 +68,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // AI Content Generator Click
+  if (genAiBtn) {
+    genAiBtn.addEventListener('click', () => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]?.id) {
+          chrome.tabs.sendMessage(tabs[0].id, { action: "TOGGLE_SIDEBAR" });
+        }
+      });
+    });
+  }
+
   function renderPopupResults(data) {
     listingScore.innerText = `${data.score} / 100`;
     scoreStatus.innerText = data.score >= 80 ? '🔥 Great Listing Quality!' : '⚠️ Optimization Recommended';
     scoreStatus.style.color = data.score >= 80 ? '#16a34a' : '#d97706';
 
     titleFeedback.innerText = data.titleAudit?.feedback || 'Title analyzed.';
+    gapFeedback.innerText = (data.competitorGap || []).join(' • ') || 'No major gaps found.';
 
     keywordsContainer.innerHTML = '';
     (data.keywords || []).forEach((kw) => {
@@ -98,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ? 'Good title! Ensure main keywords are placed near the front.'
           : 'Title is too brief. Include brand, key benefits & specifications.'
       },
+      competitorGap: ['Add dimension chart image', 'Include warranty details'],
       keywords: ['High Quality', 'Top Choice', 'Trendy', 'Best Value']
     };
   }
