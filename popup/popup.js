@@ -1,26 +1,17 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const platformStatus = document.getElementById("platform-status");
-  const analyzeBtn = document.getElementById("analyze-btn");
-  const genAiBtn = document.getElementById("gen-ai-btn");
-  const toggleOverlayBtn = document.getElementById("toggle-overlay-btn");
-  const listingScore = document.getElementById("listing-score");
-  const scoreStatus = document.getElementById("score-status");
-  const detailsSection = document.getElementById("details-section");
-  const titleFeedback = document.getElementById("title-feedback");
-  const gapFeedback = document.getElementById("gap-feedback");
-  const keywordsContainer = document.getElementById("keywords-container");
+document.addEventListener('DOMContentLoaded', () => {
+  const platformStatus = document.getElementById('platform-status');
+  const analyzeBtn = document.getElementById('analyze-btn');
+  const genAiBtn = document.getElementById('gen-ai-btn');
+  const toggleOverlayBtn = document.getElementById('toggle-overlay-btn');
+  const listingScore = document.getElementById('listing-score');
+  const scoreStatus = document.getElementById('score-status');
+  const detailsSection = document.getElementById('details-section');
+  const titleFeedback = document.getElementById('title-feedback');
+  const gapFeedback = document.getElementById('gap-feedback');
+  const keywordsContainer = document.getElementById('keywords-container');
 
   // Detect active platform tab
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-<<<<<<< HEAD
-    const url = tabs[0]?.url || "";
-    if (url.includes("amazon")) {
-      platformStatus.innerText = "Amazon";
-    } else if (url.includes("flipkart")) {
-      platformStatus.innerText = "Flipkart";
-    } else if (url.includes("meesho")) {
-      platformStatus.innerText = "Meesho";
-=======
     const activeTab = tabs[0];
     const url = activeTab?.url || '';
     if (url.includes('amazon')) {
@@ -29,71 +20,20 @@ document.addEventListener("DOMContentLoaded", () => {
       platformStatus.innerText = 'Flipkart';
     } else if (url.includes('meesho')) {
       platformStatus.innerText = 'Meesho';
->>>>>>> 60e5f79d1d22073304a4f0be509f9bfa23a4fdb3
     } else {
-      platformStatus.innerText = "Generic Site";
-      platformStatus.style.background = "#64748b";
+      platformStatus.innerText = 'Generic Site';
+      platformStatus.style.background = '#64748b';
     }
   });
 
-<<<<<<< HEAD
-  // Toggle Overlay Sidebar in Active Tab
-  toggleOverlayBtn.addEventListener("click", () => {
-=======
   // Safe tab message sender helper (handles "Could not establish connection" runtime error cleanly)
   function sendTabMessage(message, callback) {
->>>>>>> 60e5f79d1d22073304a4f0be509f9bfa23a4fdb3
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tabId = tabs[0]?.id;
       if (!tabId) {
         if (callback) callback(null);
         return;
       }
-<<<<<<< HEAD
-    });
-  });
-
-  // Quick Audit Listing Click
-  analyzeBtn.addEventListener("click", () => {
-    listingScore.innerText = "Scanning...";
-    scoreStatus.innerText = "Fetching listing fields from page...";
-
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (!tabs[0]?.id) return;
-
-      chrome.tabs.sendMessage(
-        tabs[0].id,
-        { action: "SCRAPE_FORM_DATA" },
-        async (scrapedData) => {
-          if (!scrapedData) {
-            listingScore.innerText = "Error";
-            scoreStatus.innerText =
-              "Please refresh or open product listing page.";
-            return;
-          }
-
-          try {
-            const response = await fetch(
-              "http://localhost:3000/analyze-listing",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(scrapedData),
-              }
-            );
-
-            if (!response.ok) throw new Error("Backend failed");
-            const data = await response.json();
-            renderPopupResults(data);
-          } catch (err) {
-            console.warn(
-              "Backend server not responding, using offline scoring:",
-              err
-            );
-            const offlineData = generateOfflineAudit(scrapedData);
-            renderPopupResults(offlineData);
-          }
-=======
 
       // First check if active tab URL is a restricted chrome:// URL
       const tabUrl = tabs[0]?.url || '';
@@ -123,9 +63,8 @@ document.addEventListener("DOMContentLoaded", () => {
           });
         } else {
           if (callback) callback(response);
->>>>>>> 60e5f79d1d22073304a4f0be509f9bfa23a4fdb3
         }
-      );
+      });
     });
   }
 
@@ -136,17 +75,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // AI Content Generator Click
   if (genAiBtn) {
-<<<<<<< HEAD
-    genAiBtn.addEventListener("click", () => {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]?.id) {
-          chrome.tabs.sendMessage(tabs[0].id, { action: "TOGGLE_SIDEBAR" });
-        }
-      });
-=======
     genAiBtn.addEventListener('click', () => {
       sendTabMessage({ action: "TOGGLE_SIDEBAR" });
->>>>>>> 60e5f79d1d22073304a4f0be509f9bfa23a4fdb3
     });
   }
 
@@ -182,25 +112,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderPopupResults(data) {
     listingScore.innerText = `${data.score} / 100`;
-    scoreStatus.innerText =
-      data.score >= 80
-        ? "🔥 Great Listing Quality!"
-        : "⚠️ Optimization Recommended";
-    scoreStatus.style.color = data.score >= 80 ? "#16a34a" : "#d97706";
+    scoreStatus.innerText = data.score >= 80 ? '🔥 Great Listing Quality!' : '⚠️ Optimization Recommended';
+    scoreStatus.style.color = data.score >= 80 ? '#16a34a' : '#d97706';
 
-    titleFeedback.innerText = data.titleAudit?.feedback || "Title analyzed.";
-    gapFeedback.innerText =
-      (data.competitorGap || []).join(" • ") || "No major gaps found.";
+    titleFeedback.innerText = data.titleAudit?.feedback || 'Title analyzed.';
+    gapFeedback.innerText = (data.competitorGap || []).join(' • ') || 'No major gaps found.';
 
-    keywordsContainer.innerHTML = "";
+    keywordsContainer.innerHTML = '';
     (data.keywords || []).forEach((kw) => {
-      const span = document.createElement("span");
-      span.className = "kw-tag";
+      const span = document.createElement('span');
+      span.className = 'kw-tag';
       span.innerText = kw;
       keywordsContainer.appendChild(span);
     });
 
-    detailsSection.style.display = "block";
+    detailsSection.style.display = 'block';
   }
 
   function generateOfflineAudit(scraped) {
@@ -212,13 +138,12 @@ document.addEventListener("DOMContentLoaded", () => {
     return {
       score: Math.min(score, 95),
       titleAudit: {
-        feedback:
-          scraped.title && scraped.title.length > 25
-            ? "Good title! Ensure main keywords are placed near the front."
-            : "Title is too brief. Include brand, key benefits & specifications.",
+        feedback: scraped.title && scraped.title.length > 25
+          ? 'Good title! Ensure main keywords are placed near the front.'
+          : 'Title is too brief. Include brand, key benefits & specifications.'
       },
-      competitorGap: ["Add dimension chart image", "Include warranty details"],
-      keywords: ["High Quality", "Top Choice", "Trendy", "Best Value"],
+      competitorGap: ['Add dimension chart image', 'Include warranty details'],
+      keywords: ['High Quality', 'Top Choice', 'Trendy', 'Best Value']
     };
   }
 });
