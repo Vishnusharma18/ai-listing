@@ -4,10 +4,37 @@ ListingBoom AI is a Chrome Extension (Manifest V3) and Express Node.js Backend s
 
 ---
 
+## ⚡ Quick Start (1-Command Run)
+
+Run this single command from the root folder to start everything automatically:
+
+```bash
+npm start
+```
+
+This command will automatically install all backend dependencies and start the backend AI server at `http://localhost:3000`.
+
+To run backend automated tests with one command:
+```bash
+npm test
+```
+
+---
+
+## 🌐 Chrome Extension Setup (1-Time Step)
+
+1. Open Google Chrome and go to `chrome://extensions/`.
+2. Enable **Developer mode** (toggle switch in the top right corner).
+3. Click **Load unpacked** (top left corner) and select this project folder (where `manifest.json` is located).
+4. Done! **ListingBoom AI** is ready to use on Amazon, Flipkart, and Meesho seller pages.
+
+---
+
 ## 📁 Repository Structure
 
 ```
 .
+├── package.json              # Single command runner script (`npm start`)
 ├── backend/                  # Node.js Express API Server
 │   ├── package.json
 │   ├── server.js            # Main backend server (/analyze-listing)
@@ -26,43 +53,6 @@ ListingBoom AI is a Chrome Extension (Manifest V3) and Express Node.js Backend s
 
 ---
 
-## 🚀 Setup Instructions
-
-### 1. Backend API Server Setup
-
-1. Open your terminal and navigate to the `backend` directory:
-   ```bash
-   cd backend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Run the automated test suite to ensure server components are functioning properly:
-   ```bash
-   npm test
-   ```
-
-4. Start the backend server:
-   ```bash
-   npm start
-   ```
-   The backend server will run at `http://localhost:3000`.
-
----
-
-### 2. Chrome Extension Setup
-
-1. Open Google Chrome and navigate to `chrome://extensions/`.
-2. Enable **Developer mode** using the toggle switch in the top right corner.
-3. Click the **Load unpacked** button in the top left corner.
-4. Select the root folder of this repository (the folder containing `manifest.json`).
-5. The **ListingBoom AI** extension will now be installed in Chrome!
-
----
-
 ## 🛠 Features & Usage
 
 1. **Active Page DOM Scraper & Instant Audit**:
@@ -76,22 +66,3 @@ ListingBoom AI is a Chrome Extension (Manifest V3) and Express Node.js Backend s
 
 3. **Offline Fallback Engine**:
    - If the local backend server is not running, the content script and popup automatically fall back to an internal client-side evaluation engine.
-
----
-
-## 🧪 Testing Backend API
-
-To manually test the backend analysis endpoint via `curl`:
-
-```bash
-curl -X POST http://localhost:3000/analyze-listing \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "Amazon",
-    "title": "Wireless Bluetooth Earbuds",
-    "description": "High quality noise cancelling earbuds with fast charging case.",
-    "bullets": ["Bluetooth 5.3", "IPX5 Waterproof"],
-    "price": "999",
-    "imageUrls": ["https://example.com/img1.jpg", "https://example.com/img2.jpg"]
-  }'
-```
