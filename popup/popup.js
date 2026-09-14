@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Detect active platform tab
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+<<<<<<< HEAD
     const url = tabs[0]?.url || "";
     if (url.includes("amazon")) {
       platformStatus.innerText = "Amazon";
@@ -19,18 +20,36 @@ document.addEventListener("DOMContentLoaded", () => {
       platformStatus.innerText = "Flipkart";
     } else if (url.includes("meesho")) {
       platformStatus.innerText = "Meesho";
+=======
+    const activeTab = tabs[0];
+    const url = activeTab?.url || '';
+    if (url.includes('amazon')) {
+      platformStatus.innerText = 'Amazon';
+    } else if (url.includes('flipkart')) {
+      platformStatus.innerText = 'Flipkart';
+    } else if (url.includes('meesho')) {
+      platformStatus.innerText = 'Meesho';
+>>>>>>> 60e5f79d1d22073304a4f0be509f9bfa23a4fdb3
     } else {
       platformStatus.innerText = "Generic Site";
       platformStatus.style.background = "#64748b";
     }
   });
 
+<<<<<<< HEAD
   // Toggle Overlay Sidebar in Active Tab
   toggleOverlayBtn.addEventListener("click", () => {
+=======
+  // Safe tab message sender helper (handles "Could not establish connection" runtime error cleanly)
+  function sendTabMessage(message, callback) {
+>>>>>>> 60e5f79d1d22073304a4f0be509f9bfa23a4fdb3
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: "TOGGLE_SIDEBAR" });
+      const tabId = tabs[0]?.id;
+      if (!tabId) {
+        if (callback) callback(null);
+        return;
       }
+<<<<<<< HEAD
     });
   });
 
@@ -74,21 +93,92 @@ document.addEventListener("DOMContentLoaded", () => {
             const offlineData = generateOfflineAudit(scrapedData);
             renderPopupResults(offlineData);
           }
+=======
+
+      // First check if active tab URL is a restricted chrome:// URL
+      const tabUrl = tabs[0]?.url || '';
+      if (tabUrl.startsWith('chrome://') || tabUrl.startsWith('edge://') || tabUrl.startsWith('about:')) {
+        if (callback) callback(null);
+        return;
+      }
+
+      chrome.tabs.sendMessage(tabId, message, (response) => {
+        if (chrome.runtime.lastError) {
+          // If content script was not yet injected into this tab, dynamically inject it
+          console.warn("Content script connection failed, attempting dynamic injection:", chrome.runtime.lastError.message);
+          chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            files: ["content/content-script.js"]
+          }, () => {
+            if (chrome.runtime.lastError) {
+              console.error("Script injection failed:", chrome.runtime.lastError.message);
+              if (callback) callback(null);
+            } else {
+              // Retry sending message after injection
+              chrome.tabs.sendMessage(tabId, message, (res) => {
+                const dummy = chrome.runtime.lastError; // clear error
+                if (callback) callback(res);
+              });
+            }
+          });
+        } else {
+          if (callback) callback(response);
+>>>>>>> 60e5f79d1d22073304a4f0be509f9bfa23a4fdb3
         }
       );
     });
+  }
+
+  // Toggle Overlay Sidebar in Active Tab
+  toggleOverlayBtn.addEventListener('click', () => {
+    sendTabMessage({ action: "TOGGLE_SIDEBAR" });
   });
 
   // AI Content Generator Click
   if (genAiBtn) {
+<<<<<<< HEAD
     genAiBtn.addEventListener("click", () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0]?.id) {
           chrome.tabs.sendMessage(tabs[0].id, { action: "TOGGLE_SIDEBAR" });
         }
       });
+=======
+    genAiBtn.addEventListener('click', () => {
+      sendTabMessage({ action: "TOGGLE_SIDEBAR" });
+>>>>>>> 60e5f79d1d22073304a4f0be509f9bfa23a4fdb3
     });
   }
+
+  // Quick Audit Listing Click
+  analyzeBtn.addEventListener('click', () => {
+    listingScore.innerText = 'Scanning...';
+    scoreStatus.innerText = 'Fetching listing fields from page...';
+
+    sendTabMessage({ action: "SCRAPE_FORM_DATA" }, async (scrapedData) => {
+      if (!scrapedData) {
+        listingScore.innerText = '⚠️ Alert';
+        scoreStatus.innerText = 'Please open a product listing page & refresh.';
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:3000/analyze-listing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(scrapedData)
+        });
+
+        if (!response.ok) throw new Error('Backend failed');
+        const data = await response.json();
+        renderPopupResults(data);
+      } catch (err) {
+        console.warn('Backend server not responding, using offline scoring:', err);
+        const offlineData = generateOfflineAudit(scrapedData);
+        renderPopupResults(offlineData);
+      }
+    });
+  });
 
   function renderPopupResults(data) {
     listingScore.innerText = `${data.score} / 100`;
