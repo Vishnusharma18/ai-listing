@@ -12,7 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Detect active platform tab
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const url = tabs[0]?.url || '';
+    const activeTab = tabs[0];
+    const url = activeTab?.url || '';
     if (url.includes('amazon')) {
       platformStatus.innerText = 'Amazon';
     } else if (url.includes('flipkart')) {
@@ -25,59 +26,89 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Safe tab message sender helper (handles "Could not establish connection" runtime error cleanly)
+  function sendTabMessage(message, callback) {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tabId = tabs[0]?.id;
+      if (!tabId) {
+        if (callback) callback(null);
+        return;
+      }
+
+      // First check if active tab URL is a restricted chrome:// URL
+      const tabUrl = tabs[0]?.url || '';
+      if (tabUrl.startsWith('chrome://') || tabUrl.startsWith('edge://') || tabUrl.startsWith('about:')) {
+        if (callback) callback(null);
+        return;
+      }
+
+      chrome.tabs.sendMessage(tabId, message, (response) => {
+        if (chrome.runtime.lastError) {
+          // If content script was not yet injected into this tab, dynamically inject it
+          console.warn("Content script connection failed, attempting dynamic injection:", chrome.runtime.lastError.message);
+          chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            files: ["content/content-script.js"]
+          }, () => {
+            if (chrome.runtime.lastError) {
+              console.error("Script injection failed:", chrome.runtime.lastError.message);
+              if (callback) callback(null);
+            } else {
+              // Retry sending message after injection
+              chrome.tabs.sendMessage(tabId, message, (res) => {
+                const dummy = chrome.runtime.lastError; // clear error
+                if (callback) callback(res);
+              });
+            }
+          });
+        } else {
+          if (callback) callback(response);
+        }
+      });
+    });
+  }
+
   // Toggle Overlay Sidebar in Active Tab
   toggleOverlayBtn.addEventListener('click', () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: "TOGGLE_SIDEBAR" });
-      }
-    });
+    sendTabMessage({ action: "TOGGLE_SIDEBAR" });
   });
+
+  // AI Content Generator Click
+  if (genAiBtn) {
+    genAiBtn.addEventListener('click', () => {
+      sendTabMessage({ action: "TOGGLE_SIDEBAR" });
+    });
+  }
 
   // Quick Audit Listing Click
   analyzeBtn.addEventListener('click', () => {
     listingScore.innerText = 'Scanning...';
     scoreStatus.innerText = 'Fetching listing fields from page...';
 
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (!tabs[0]?.id) return;
+    sendTabMessage({ action: "SCRAPE_FORM_DATA" }, async (scrapedData) => {
+      if (!scrapedData) {
+        listingScore.innerText = '⚠️ Alert';
+        scoreStatus.innerText = 'Please open a product listing page & refresh.';
+        return;
+      }
 
-      chrome.tabs.sendMessage(tabs[0].id, { action: "SCRAPE_FORM_DATA" }, async (scrapedData) => {
-        if (!scrapedData) {
-          listingScore.innerText = 'Error';
-          scoreStatus.innerText = 'Please refresh or open product listing page.';
-          return;
-        }
+      try {
+        const response = await fetch('http://localhost:3000/analyze-listing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(scrapedData)
+        });
 
-        try {
-          const response = await fetch('http://localhost:3000/analyze-listing', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(scrapedData)
-          });
-
-          if (!response.ok) throw new Error('Backend failed');
-          const data = await response.json();
-          renderPopupResults(data);
-        } catch (err) {
-          console.warn('Backend server not responding, using offline scoring:', err);
-          const offlineData = generateOfflineAudit(scrapedData);
-          renderPopupResults(offlineData);
-        }
-      });
+        if (!response.ok) throw new Error('Backend failed');
+        const data = await response.json();
+        renderPopupResults(data);
+      } catch (err) {
+        console.warn('Backend server not responding, using offline scoring:', err);
+        const offlineData = generateOfflineAudit(scrapedData);
+        renderPopupResults(offlineData);
+      }
     });
   });
-
-  // AI Content Generator Click
-  if (genAiBtn) {
-    genAiBtn.addEventListener('click', () => {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]?.id) {
-          chrome.tabs.sendMessage(tabs[0].id, { action: "TOGGLE_SIDEBAR" });
-        }
-      });
-    });
-  }
 
   function renderPopupResults(data) {
     listingScore.innerText = `${data.score} / 100`;
