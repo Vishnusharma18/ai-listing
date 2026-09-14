@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "ListingBoom - AI Seller Assistant",
+  "version": "1.0.0",
+  "description": "Instant AI Listing Optimizer & Trend Checker for Amazon, Flipkart & Meesho.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*.amazon.in/*",
+    "https://*.flipkart.com/*",
+    "https://*.meesho.com/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "ListingBoom AI"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.amazon.in/*",
+        "https://*.flipkart.com/*",
+        "https://*.meesho.com/*"
+      ],
+      "js": ["content/content-script.js"]
+    }
+  ]
+}

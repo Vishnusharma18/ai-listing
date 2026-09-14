@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ListingBoom AI</title>
+  <style>
+    body { width: 320px; font-family: Arial, sans-serif; margin: 0; padding: 12px; background: #f8fafc; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+    .title { font-size: 16px; font-weight: bold; color: #0f172a; }
+    .badge { background: #22c55e; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
+    .btn { background: #2563eb; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 12px; }
+    .btn:hover { background: #1d4ed8; }
+    .score-card { background: white; padding: 10px; border-radius: 6px; margin-top: 10px; border: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="title">ListingBoom AI ⚡</span>
+    <span class="badge" id="platform-status">Detecting...</span>
+  </div>
+
+  <div class="score-card">
+    <p style="margin:0; font-size: 12px; color: #64748b;">Instant Listing Score</p>
+    <h2 style="margin: 4px 0; color: #0f172a;" id="listing-score">-- / 100</h2>
+  </div>
+
+  <button class="btn" id="analyze-btn">Quick Audit Listing</button>
+
+  <script src="popup.js"></script>
+</body>
+</html>
